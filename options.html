@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gmail Account Selector settings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="options-page">
+    <main class="settings-panel">
+      <header>
+        <p class="eyebrow">Gmail Account Selector</p>
+        <h1>Manage accounts</h1>
+        <p class="intro">Add the Gmail sign-in order you use in this browser.</p>
+      </header>
+
+      <form id="account-form" novalidate>
+        <h2 id="form-title">Add account</h2>
+        <label for="label">Display name</label>
+        <input id="label" name="label" type="text" required />
+
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" required />
+
+        <label for="authuser">Gmail account index</label>
+        <input id="authuser" name="authuser" type="text" inputmode="numeric" required aria-describedby="index-help" />
+        <p id="index-help" class="field-help">0 is the first account signed in to Gmail, 1 is the second, and so on. Filled in automatically the first time you open that account in Gmail.</p>
+
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button id="submit-account" class="button button-primary" type="submit">Save account</button>
+          <button id="cancel-edit" class="button button-secondary" type="button" hidden>Cancel</button>
+        </div>
+      </form>
+
+
+      <section class="settings-block" aria-labelledby="preferences-title">
+        <h2 id="preferences-title">Preferences</h2>
+        <fieldset class="settings-fieldset">
+          <legend>Picker order</legend>
+          <label class="settings-option"><input type="radio" name="order" value="manual" /> Manual order</label>
+          <label class="settings-option"><input type="radio" name="order" value="recent" /> Most recently used first</label>
+        </fieldset>
+        <fieldset class="settings-fieldset">
+          <legend>Picker layout</legend>
+          <label class="settings-option"><input type="radio" name="layout" value="list" /> List — one account per row</label>
+          <label class="settings-option"><input type="radio" name="layout" value="grid" /> Grid — cards side by side</label>
+        </fieldset>
+        <label class="settings-option"><input id="unread-enabled" type="checkbox" /> Show unread counts (polls Gmail every 5 minutes)</label>
+      </section>
+      <section class="saved-accounts" aria-labelledby="saved-accounts-title">
+        <h2 id="saved-accounts-title">Saved accounts</h2>
+        <p id="load-error" class="form-error" role="alert" hidden></p>
+        <ul id="saved-account-list" class="saved-account-list"></ul>
+      </section>
+
+      <section class="settings-block" aria-labelledby="backup-title">
+        <h2 id="backup-title">Backup</h2>
+        <div class="form-actions">
+          <button id="export-accounts" class="button button-secondary" type="button">Export JSON</button>
+        </div>
+        <label for="import-file">Import JSON (replaces the current list)</label>
+        <input id="import-file" type="file" accept="application/json" />
+      </section>
+
+      <section class="settings-block" aria-labelledby="reset-title">
+        <h2 id="reset-title">Start over</h2>
+        <p class="field-help">Signed out of these accounts? Clear the list, then open each mailbox in Gmail once — names, indexes and photos come back automatically.</p>
+        <div class="form-actions">
+          <button id="clear-accounts" class="button button-danger" type="button">Clear all accounts</button>
+        </div>
+      </section>
+      <p id="status" class="status" aria-live="polite"></p>
+      <div id="toast" class="toast" role="status" hidden>
+        <span id="toast-message"></span>
+        <button id="toast-undo" class="button button-secondary" type="button">Undo</button>
+      </div>
+    </main>
+    <script type="module" src="src/options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Choose Gmail account</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="picker-page">
+    <main class="picker-panel">
+      <p class="eyebrow">Gmail</p>
+      <h1>Choose an account</h1>
+      <p class="intro">Open Gmail with one saved account.</p>
+      <section id="account-list" class="account-list" aria-label="Saved Gmail accounts"></section>
+      <section id="empty-state" class="empty-state" hidden>
+        <p>No Gmail accounts yet — open Gmail in this browser and this list fills itself in.</p>
+      </section>
+      <button id="manage-accounts" class="button button-primary manage-accounts" type="button">Manage accounts</button>
+    </main>
+    <script type="module" src="src/picker.js"></script>
+  </body>
+</html>

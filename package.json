@@ -1,0 +1,12 @@
+{
+  "name": "gmail-account-selector",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that picks a Gmail account, with auto-discovered indexes, profile photos and unread counts",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test",
+    "validate:manifest": "node --check src/background.js && node --check src/accounts.js && node --check src/picker.js && node --check src/options.js && node --check src/redirect.js && node --check src/discover.js",
+    "package": "node scripts/package.mjs"
+  }
+}
