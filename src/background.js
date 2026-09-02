@@ -1,4 +1,5 @@
 import {
+  CUSTOM_AVATAR_SOURCE,
   loadAccounts,
   loadSettings,
   parseUnreadCount,
@@ -96,13 +97,18 @@ async function cacheAvatar(id, photoUrl) {
   }
 
   const accounts = await loadAccounts();
+  const current = accounts.find((account) => account.id === id);
 
-  if (!accounts.some((account) => account.id === id)) {
+  if (!current || current.customAvatar || current.avatarSource === CUSTOM_AVATAR_SOURCE) {
     return;
   }
 
   await saveAccounts(
-    accounts.map((account) => (account.id === id ? { ...account, avatar, avatarSource: photoUrl } : account)),
+    accounts.map((account) =>
+      account.id === id && !account.customAvatar && account.avatarSource !== CUSTOM_AVATAR_SOURCE
+        ? { ...account, avatar, avatarSource: photoUrl }
+        : account,
+    ),
   );
 }
 
@@ -115,7 +121,14 @@ async function handleDiscovery(discovery) {
   const target = nextAccounts.find((account) => account.email.trim().toLowerCase() === email);
   const photoUrl = discovery?.photoUrl;
 
-  if (!target || typeof photoUrl !== "string" || photoUrl.length === 0 || target.avatarSource === photoUrl) {
+  if (
+    !target ||
+    target.customAvatar ||
+    target.avatarSource === CUSTOM_AVATAR_SOURCE ||
+    typeof photoUrl !== "string" ||
+    photoUrl.length === 0 ||
+    target.avatarSource === photoUrl
+  ) {
     return;
   }
 

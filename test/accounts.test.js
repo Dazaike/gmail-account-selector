@@ -78,6 +78,8 @@ test("loadAccounts normalizes missing and malformed storage data", async () => {
       ...valid,
       avatar: null,
       avatarSource: null,
+      customAvatar: false,
+      customLabel: false,
       hidden: false,
       lastUsedAt: null,
       discovered: false,
@@ -113,22 +115,23 @@ test("markUsed timestamps only the requested account", async () => {
 });
 
 test("loadSettings falls back to defaults and rejects unknown values", async () => {
-  assert.deepEqual(await loadSettings(), { order: "manual", layout: "list", unreadEnabled: true });
+  assert.deepEqual(await loadSettings(), { order: "manual", layout: "list", unreadEnabled: true, showEmails: true });
 
-  storedValue = { settings: { order: "sideways", layout: "carousel", unreadEnabled: 0 } };
-  assert.deepEqual(await loadSettings(), { order: "manual", layout: "list", unreadEnabled: false });
+  storedValue = { settings: { order: "sideways", layout: "carousel", unreadEnabled: 0, showEmails: false } };
+  assert.deepEqual(await loadSettings(), { order: "manual", layout: "list", unreadEnabled: false, showEmails: false });
 
   storedValue = { settings: { order: "recent", layout: "grid" } };
-  assert.deepEqual(await loadSettings(), { order: "recent", layout: "grid", unreadEnabled: true });
+  assert.deepEqual(await loadSettings(), { order: "recent", layout: "grid", unreadEnabled: true, showEmails: true });
 });
 
 test("saveSettings merges a patch over the stored settings", async () => {
-  storedValue = { settings: { order: "recent", layout: "grid", unreadEnabled: true } };
+  storedValue = { settings: { order: "recent", layout: "grid", unreadEnabled: true, showEmails: true } };
   const saved = await saveSettings({ unreadEnabled: false });
 
-  assert.deepEqual(saved, { order: "recent", layout: "grid", unreadEnabled: false });
-  assert.deepEqual(writes, [{ settings: { order: "recent", layout: "grid", unreadEnabled: false } }]);
+  assert.deepEqual(saved, { order: "recent", layout: "grid", unreadEnabled: false, showEmails: true });
+  assert.deepEqual(writes, [{ settings: { order: "recent", layout: "grid", unreadEnabled: false, showEmails: true } }]);
 });
+
 
 test("loadUnread ignores malformed unread payloads", async () => {
   assert.deepEqual(await loadUnread(), {});

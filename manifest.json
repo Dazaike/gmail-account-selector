@@ -1,14 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Gmail Account Selector",
-  "version": "1.2.0",
+  "version": "1.2.6",
   "background": {
     "service_worker": "src/background.js",
     "type": "module"
   },
   "action": {
     "default_popup": "picker.html?view=popup",
-    "default_title": "Choose Gmail account"
+    "default_title": "Choose Gmail account",
+    "default_icon": "icon.svg"
+  },
+  "icons": {
+    "16": "icon.svg",
+    "32": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
   },
   "commands": {
     "open-picker": {

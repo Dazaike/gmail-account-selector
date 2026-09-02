@@ -1,4 +1,5 @@
 import {
+  CUSTOM_AVATAR_SOURCE,
   avatarHue,
   createAccountId,
   initialsFor,
@@ -24,6 +25,7 @@ const status = document.querySelector("#status");
 const orderRadios = document.querySelectorAll('input[name="order"]');
 const layoutRadios = document.querySelectorAll('input[name="layout"]');
 const unreadEnabled = document.querySelector("#unread-enabled");
+const showEmails = document.querySelector("#show-emails");
 const exportButton = document.querySelector("#export-accounts");
 const importInput = document.querySelector("#import-file");
 const clearButton = document.querySelector("#clear-accounts");
@@ -36,6 +38,10 @@ let editingId = null;
 let toastTimer = null;
 let undoSnapshot = null;
 let focusHandleIndex = null;
+const CUSTOM_AVATAR_SIZE = 96;
+const CUSTOM_AVATAR_BYTE_LIMIT = 262144;
+const CUSTOM_AVATAR_FILE_LIMIT = 5 * 1024 * 1024;
+const CUSTOM_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 function showFormError(message = "") {
   formError.textContent = message;
@@ -108,6 +114,105 @@ function renderAvatar(account) {
   return avatar;
 }
 
+async function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(new Error("Could not read the resized photo.")));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function normalizeCustomAvatar(file) {
+  if (!CUSTOM_AVATAR_TYPES.has(file.type)) {
+    throw new Error("Choose a JPEG, PNG, WebP, or GIF image.");
+  }
+
+  if (file.size > CUSTOM_AVATAR_FILE_LIMIT) {
+    throw new Error("Choose an image smaller than 5 MiB.");
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CUSTOM_AVATAR_SIZE;
+  canvas.height = CUSTOM_AVATAR_SIZE;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Could not prepare the selected photo.");
+  }
+
+  let source;
+  let width;
+  let height;
+  let release = () => {};
+
+  try {
+    if (typeof createImageBitmap === "function") {
+      source = await createImageBitmap(file);
+      width = source.width;
+      height = source.height;
+      release = () => source.close();
+    } else {
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      release = () => URL.revokeObjectURL(url);
+      image.src = url;
+      await image.decode();
+      source = image;
+      width = image.naturalWidth;
+      height = image.naturalHeight;
+    }
+
+    if (!width || !height) {
+      throw new Error("The selected image could not be decoded.");
+    }
+
+    const scale = Math.max(CUSTOM_AVATAR_SIZE / width, CUSTOM_AVATAR_SIZE / height);
+    const drawWidth = width * scale;
+    const drawHeight = height * scale;
+    context.drawImage(
+      source,
+      (CUSTOM_AVATAR_SIZE - drawWidth) / 2,
+      (CUSTOM_AVATAR_SIZE - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("The selected image")) {
+      throw error;
+    }
+
+    throw new Error("The selected image could not be decoded.");
+  } finally {
+    release();
+  }
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+
+  if (!blob || blob.size === 0 || blob.size > CUSTOM_AVATAR_BYTE_LIMIT) {
+    throw new Error("The resized photo is too large. Choose a simpler image.");
+  }
+
+  return blobToDataUrl(blob);
+}
+
+async function saveCustomAvatar(id, file) {
+  const avatar = await normalizeCustomAvatar(file);
+  const accountExists = accounts.some((account) => account.id === id);
+
+  if (!accountExists) {
+    throw new Error("That account is no longer available. Reload and try again.");
+  }
+
+  await persist(
+    accounts.map((account) =>
+      account.id === id
+        ? { ...account, avatar, avatarSource: CUSTOM_AVATAR_SOURCE, customAvatar: true }
+        : account,
+    ),
+  );
+}
+
 function renderAccounts() {
   accountList.replaceChildren();
 
@@ -121,6 +226,8 @@ function renderAccounts() {
     const label = document.createElement("strong");
     const email = document.createElement("span");
     const actions = document.createElement("div");
+    const photoInput = document.createElement("input");
+    const setPhoto = document.createElement("button");
     const edit = document.createElement("button");
     const hide = document.createElement("button");
     const remove = document.createElement("button");
@@ -131,6 +238,33 @@ function renderAccounts() {
     details.className = "saved-account-details";
     email.className = "account-email";
     actions.className = "account-actions";
+    photoInput.type = "file";
+    photoInput.accept = "image/jpeg,image/png,image/webp,image/gif";
+    photoInput.hidden = true;
+    photoInput.setAttribute("aria-label", `Choose a custom photo for ${account.label}`);
+    photoInput.addEventListener("change", async () => {
+      const file = photoInput.files?.[0];
+      photoInput.value = "";
+
+      if (!file) {
+        return;
+      }
+
+      showFormError();
+
+      try {
+        await saveCustomAvatar(account.id, file);
+      } catch (error) {
+        showFormError(error instanceof Error ? error.message : "Could not save the selected photo.");
+      }
+    });
+
+    setPhoto.className = "button button-secondary";
+    setPhoto.type = "button";
+    setPhoto.textContent = account.avatarSource === CUSTOM_AVATAR_SOURCE ? "Replace photo" : "Set photo";
+    setPhoto.setAttribute("aria-label", `${setPhoto.textContent} for ${account.label}`);
+    setPhoto.addEventListener("click", () => photoInput.click());
+
 
     handle.className = "drag-handle";
     handle.textContent = "⠿";
@@ -190,6 +324,8 @@ function renderAccounts() {
       details.append(warning);
     }
 
+    actions.append(photoInput, setPhoto);
+
     if (account.avatar) {
       const removePhoto = document.createElement("button");
       removePhoto.className = "button button-secondary";
@@ -203,7 +339,6 @@ function renderAccounts() {
       help.textContent = "No photo yet — open this account in Gmail once.";
       details.append(help);
     }
-
     actions.append(edit, hide, remove);
     item.append(handle, renderAvatar(account), details, actions);
 
@@ -282,7 +417,11 @@ async function toggleHidden(id) {
 
 async function removePhotoFor(id) {
   await persist(
-    accounts.map((account) => (account.id === id ? { ...account, avatar: null, avatarSource: null } : account)),
+    accounts.map((account) =>
+      account.id === id
+        ? { ...account, avatar: null, avatarSource: null, customAvatar: false }
+        : account,
+    ),
   );
 }
 
@@ -296,6 +435,7 @@ function applySettings(settings) {
   }
 
   unreadEnabled.checked = settings.unreadEnabled;
+  showEmails.checked = settings.showEmails;
 }
 
 form.addEventListener("submit", async (event) => {
@@ -315,8 +455,8 @@ form.addEventListener("submit", async (event) => {
   }
 
   const nextAccounts = editingId
-    ? accounts.map((account) => (account.id === editingId ? { ...account, ...values } : account))
-    : [...accounts, normalizeAccount({ id: createAccountId(), ...values })];
+    ? accounts.map((account) => (account.id === editingId ? { ...account, ...values, customLabel: true } : account))
+    : [...accounts, normalizeAccount({ id: createAccountId(), ...values, customLabel: true })];
 
   await persist(nextAccounts);
 });
@@ -349,6 +489,11 @@ for (const [radios, key] of [
 unreadEnabled.addEventListener("change", async () => {
   applySettings(await saveSettings({ unreadEnabled: unreadEnabled.checked }));
   chrome.runtime.sendMessage({ type: "unread-refresh" }).catch(() => {});
+  status.textContent = "Saved.";
+});
+
+showEmails.addEventListener("change", async () => {
+  applySettings(await saveSettings({ showEmails: showEmails.checked }));
   status.textContent = "Saved.";
 });
 

@@ -5,15 +5,22 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 
-const CONTENTS = ["manifest.json", "picker.html", "options.html", "styles.css", "src"];
+const CONTENTS = ["manifest.json", "picker.html", "options.html", "icon.svg", "styles.css", "src"];
 
 const { version } = JSON.parse(readFileSync("manifest.json", "utf8"));
 const archive = `dist/gmail-account-selector-${version}.zip`;
 
 mkdirSync("dist", { recursive: true });
 rmSync(archive, { force: true });
-execFileSync("zip", ["-r", "-q", "-X", archive, ...CONTENTS], { stdio: "inherit" });
 
-const listing = execFileSync("zip", ["-sf", archive], { encoding: "utf8" });
-console.log(listing.trim());
+try {
+  execFileSync("zip", ["-r", "-q", "-X", archive, ...CONTENTS], { stdio: "inherit" });
+  const listing = execFileSync("zip", ["-sf", archive], { encoding: "utf8" });
+  console.log(listing.trim());
+} catch {
+  execFileSync("tar", ["-a", "-c", "-f", archive, ...CONTENTS], { stdio: "inherit" });
+  const listing = execFileSync("tar", ["-tf", archive], { encoding: "utf8" });
+  console.log(listing.trim());
+}
+
 console.log(`\nPacked ${archive}`);

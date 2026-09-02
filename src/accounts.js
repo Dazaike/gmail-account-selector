@@ -4,7 +4,7 @@ const UNREAD_KEY = "unread";
 const VALIDATION_ERROR =
   "Enter a display name, email address, and non-negative Gmail account index.";
 const BACKUP_ERROR = "Backup file is not a valid Gmail Account Selector export.";
-const DEFAULT_SETTINGS = { order: "manual", layout: "list", unreadEnabled: true };
+const DEFAULT_SETTINGS = { order: "manual", layout: "list", unreadEnabled: true, showEmails: true };
 
 function parseAuthuser(value) {
   const text = String(value ?? "").trim();
@@ -24,6 +24,8 @@ function optionalString(value, prefix = "") {
 
   return prefix && !value.startsWith(prefix) ? null : value;
 }
+
+export const CUSTOM_AVATAR_SOURCE = "custom";
 
 export function normalizeAccount(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -47,14 +49,17 @@ export function normalizeAccount(value) {
   }
 
   const lastUsedAt = value.lastUsedAt;
+  const customAvatar = Boolean(value.customAvatar || value.avatarSource === CUSTOM_AVATAR_SOURCE);
 
   return {
     id,
-    label,
-    email,
+    label: label.trim(),
+    email: email.trim(),
     authuser,
     avatar: optionalString(value.avatar, "data:image/"),
-    avatarSource: optionalString(value.avatarSource),
+    avatarSource: customAvatar ? CUSTOM_AVATAR_SOURCE : optionalString(value.avatarSource),
+    customAvatar,
+    customLabel: Boolean(value.customLabel),
     hidden: Boolean(value.hidden),
     lastUsedAt: typeof lastUsedAt === "number" && Number.isFinite(lastUsedAt) && lastUsedAt >= 0 ? lastUsedAt : null,
     discovered: Boolean(value.discovered),
@@ -115,6 +120,7 @@ function sanitizeSettings(value) {
     order: source.order === "recent" ? "recent" : DEFAULT_SETTINGS.order,
     layout: source.layout === "grid" ? "grid" : DEFAULT_SETTINGS.layout,
     unreadEnabled: "unreadEnabled" in source ? Boolean(source.unreadEnabled) : DEFAULT_SETTINGS.unreadEnabled,
+    showEmails: "showEmails" in source ? Boolean(source.showEmails) : DEFAULT_SETTINGS.showEmails,
   };
 }
 
@@ -235,13 +241,29 @@ export function upsertDiscovered(accounts, discovery) {
   const key = email.toLowerCase();
   const index = accounts.findIndex((account) => account.email.trim().toLowerCase() === key);
 
-  if (index >= 0) {
-    return accounts.map((account, position) =>
-      position === index ? { ...account, authuser } : account,
-    );
-  }
-
   const displayName = String(discovery?.displayName ?? "").trim();
+
+  if (index >= 0) {
+    return accounts.map((account, position) => {
+      if (position !== index) {
+        return account;
+      }
+
+      const isFallbackLabel = account.label.toLowerCase() === account.email.split("@")[0].toLowerCase();
+      const nextLabel =
+        account.customLabel || !displayName
+          ? account.label
+          : isFallbackLabel
+            ? displayName
+            : account.label;
+
+      return {
+        ...account,
+        authuser,
+        label: nextLabel,
+      };
+    });
+  }
 
   return [
     ...accounts,
@@ -252,13 +274,14 @@ export function upsertDiscovered(accounts, discovery) {
       authuser,
       avatar: null,
       avatarSource: null,
+      customAvatar: false,
+      customLabel: false,
       hidden: false,
       lastUsedAt: null,
       discovered: true,
     },
   ];
 }
-
 export function initialsFor(label) {
   const words = String(label ?? "")
     .trim()

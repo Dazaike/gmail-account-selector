@@ -4,18 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Choose Gmail account</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="picker-page">
     <main class="picker-panel">
-      <p class="eyebrow">Gmail</p>
-      <h1>Choose an account</h1>
-      <p class="intro">Open Gmail with one saved account.</p>
+      <header class="picker-header">
+        <div class="product-label">
+          <span class="gmail-mark" aria-hidden="true"></span>
+          <span>Gmail</span>
+        </div>
+        <h1>Choose an account</h1>
+        <p class="intro">Open Gmail with one saved account.</p>
+      </header>
       <section id="account-list" class="account-list" aria-label="Saved Gmail accounts"></section>
       <section id="empty-state" class="empty-state" hidden>
         <p>No Gmail accounts yet — open Gmail in this browser and this list fills itself in.</p>
       </section>
-      <button id="manage-accounts" class="button button-primary manage-accounts" type="button">Manage accounts</button>
+      <footer class="picker-footer" aria-label="Account picker actions">
+        <button id="manage-accounts" class="button button-primary manage-accounts" type="button">Manage accounts</button>
+      </footer>
     </main>
     <script type="module" src="src/picker.js"></script>
   </body>

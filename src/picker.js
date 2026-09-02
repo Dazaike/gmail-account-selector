@@ -118,6 +118,7 @@ function renderAccounts(accounts, settings, unread) {
 
     label.textContent = account.label;
     email.textContent = account.email;
+    email.hidden = !settings.showEmails;
     text.append(label, email);
     applyUnread(unreadBadge, unread[account.id]);
     badges.append(unreadBadge);

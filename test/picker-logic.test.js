@@ -23,6 +23,8 @@ function account(overrides) {
     authuser: overrides.authuser ?? 0,
     avatar: overrides.avatar ?? null,
     avatarSource: overrides.avatarSource ?? null,
+    customAvatar: overrides.customAvatar ?? false,
+    customLabel: overrides.customLabel ?? false,
     hidden: overrides.hidden ?? false,
     lastUsedAt: overrides.lastUsedAt ?? null,
     discovered: overrides.discovered ?? false,
@@ -106,12 +108,12 @@ test("parseBackup round-trips an export payload and rejects junk", () => {
     version: 1,
     exportedAt: "2026-08-19T00:00:00.000Z",
     accounts: [account({ id: "work", label: "Work", authuser: 1, avatar: "data:image/png;base64,AA" })],
-    settings: { order: "recent", layout: "grid", unreadEnabled: false },
+    settings: { order: "recent", layout: "grid", unreadEnabled: false, showEmails: true },
   };
 
   const parsed = parseBackup(JSON.stringify(payload));
   assert.deepEqual(parsed.accounts, payload.accounts);
-  assert.deepEqual(parsed.settings, { order: "recent", layout: "grid", unreadEnabled: false });
+  assert.deepEqual(parsed.settings, { order: "recent", layout: "grid", unreadEnabled: false, showEmails: true });
 
   for (const invalid of ["{}", "[]", "not json", JSON.stringify({ accounts: [{ label: "x", email: "x@example.com", authuser: "-1" }] })]) {
     assert.throws(() => parseBackup(invalid), /Backup file is not a valid Gmail Account Selector export\./);
@@ -132,7 +134,7 @@ test("parseBackup regenerates missing and duplicate ids", () => {
   const ids = parsed.accounts.map((entry) => entry.id);
   assert.equal(new Set(ids).size, 3);
   assert.equal(parsed.accounts[1].id, "dup");
-  assert.deepEqual(parsed.settings, { order: "manual", layout: "list", unreadEnabled: true });
+  assert.deepEqual(parsed.settings, { order: "manual", layout: "list", unreadEnabled: true, showEmails: true });
 });
 
 test("initialsFor and avatarHue produce stable avatar fallbacks", () => {

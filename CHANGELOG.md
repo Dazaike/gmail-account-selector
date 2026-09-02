@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2026-09-02
+
+### Added
+
+- **Custom Avatar Uploads & Overwrite Protection:** Upload custom account photos in options. Discovery respects `customAvatar` and never overwrites custom profile pictures with newly scraped photos.
+- **Custom Label Overwrite Protection:** User-defined display names (`customLabel`) are preserved and protected from being overwritten by auto-discovered header names.
+- **Show / Hide Email Visibility:** Added a preference toggle in options to show or hide email addresses in the picker interface.
+- **Vector Extension Icons & Favicons:** Added scalable `icon.svg` brand asset for toolbar action icons (`16`, `32`, `48`, `128`) and browser tab favicons for options and picker pages.
+
 ## [1.2.0] - 2026-08-20
 
 ### Added
